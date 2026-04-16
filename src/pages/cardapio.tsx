@@ -4,6 +4,7 @@ import Header from '@/components/Header/index';
 import ProdutoCard from '@/components/ProdutoCard/index';
 import { products } from '@/data/products';
 import { useCart } from '@/hooks/useCart';
+import { supabase } from '@/lib/supabase';
 import {
   Search,
   ShoppingBag,
@@ -50,44 +51,55 @@ export default function Cardapio() {
   }, [selectedCategory, searchQuery]);
 
   /**
-   * Monta mensagem WhatsApp formatada com o pedido completo.
-   *
-   * Aprendizado: wa.me usa encoding de URL.
-   * - %0A = quebra de linha
-   * - *texto* = negrito no WhatsApp
-   * - _texto_ = itálico no WhatsApp
+   * Salva pedido no Supabase e abre o WhatsApp com a mensagem formatada.
+   * O WhatsApp abre independente de erro no Supabase (fire-and-forget).
    */
-  const handleWhatsAppOrder = () => {
-    const separator = '%0A' + '-'.repeat(22) + '%0A';
-
-    const itemsList = items
-      .map(
-        (item) =>
-          `✅ ${item.quantity}x *${item.name}*%0A` +
-          `   └ R$%20${(item.price * item.quantity).toFixed(2).replace('.', ',')}`
-      )
-      .join('%0A');
-
+  const handleWhatsAppOrder = async () => {
+    // 1. Monta a mensagem formatada
     const message = encodeURIComponent(
       [
-        '🍃 *NOVO PEDIDO — Mineiro Gourmet* 🍃',
-        '──────────────────────',
+        '\uD83C\uDF43 *NOVO PEDIDO \u2014 Mineiro Gourmet* \uD83C\uDF43',
+        '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
         items
           .map(
             (item) =>
-              `✅ ${item.quantity}x *${item.name}*\n` +
-              `   └ R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}`
+              `\u2705 ${item.quantity}x *${item.name}*\n` +
+              `   \u2514 R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}`,
           )
           .join('\n'),
-        '──────────────────────',
-        `📦 *Total: R$ ${totalPrice().toFixed(2).replace('.', ',')}*`,
+        '\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500',
+        `\uD83D\uDCE6 *Total: R$ ${totalPrice().toFixed(2).replace('.', ',')}*`,
         '',
-        '📍 *Endereço de Entrega:* (informe aqui)',
+        '\uD83D\uDCCD *Endere\u00e7o de Entrega:* (informe aqui)',
         '',
-        'Olá! Gostaria de confirmar este pedido. Pode verificar disponibilidade? 😊',
+        'Ol\u00e1! Gostaria de confirmar este pedido. Pode verificar disponibilidade? \uD83D\uDE0A',
       ].join('\n')
     );
 
+    // 2. Salva no Supabase (sem bloquear o WhatsApp)
+    try {
+      const { data: pedido, error } = await supabase
+        .from('pedidos')
+        .insert({ total: totalPrice(), canal: 'whatsapp' })
+        .select()
+        .single();
+
+      if (!error && pedido) {
+        await supabase.from('pedido_itens').insert(
+          items.map((item) => ({
+            pedido_id:  pedido.id,
+            produto_id: item.id,
+            nome:       item.name,
+            preco_unit: item.price,
+            quantidade: item.quantity,
+          }))
+        );
+      }
+    } catch {
+      // Supabase offline não impede o pedido pelo WhatsApp
+    }
+
+    // 3. Abre o WhatsApp (sempre)
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
   };
 
