@@ -4,94 +4,158 @@ import Header from '@/components/Header/index';
 import ProdutoCard from '@/components/ProdutoCard/index';
 import { products } from '@/data/products';
 import { useCart } from '@/hooks/useCart';
-import { 
-  Search, 
-  ShoppingBag, 
-  X, 
-  ArrowLeft, 
-  Trash2, 
-  Plus, 
+import {
+  Search,
+  ShoppingBag,
+  X,
+  ArrowLeft,
+  Trash2,
+  Plus,
   Minus,
-  MessageSquare
+  MessageSquare,
 } from 'lucide-react';
 import Link from 'next/link';
 
-const categories = ['Todos', 'Clássicos de Minas', 'Executivo Mineiro', 'Família Mineira', 'Sobremesas', 'Fit Mineiro'];
+// ── Número real do negócio ──────────────────────────────────────
+const WHATSAPP_NUMBER = '553592144176';
+
+// ── Categorias (sync com products.ts) ──────────────────────────
+const categories = [
+  'Todos',
+  'Clássicos de Minas',
+  'Executivo Mineiro',
+  'Família Mineira',
+  'Café Mineiro',
+  'Sobremesas',
+  'Fit Mineiro',
+];
 
 export default function Cardapio() {
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [searchQuery, setSearchQuery] = useState('');
   const [isCartOpen, setIsCartOpen] = useState(false);
-  
-  const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
 
+  const { items, removeItem, updateQuantity, totalPrice } = useCart();
+
+  // Filtragem com memo para performance
   const filteredProducts = useMemo(() => {
-    return products.filter(product => {
-      const matchesCategory = selectedCategory === 'Todos' || product.category === selectedCategory;
-      const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-                           product.description.toLowerCase().includes(searchQuery.toLowerCase());
+    return products.filter((product) => {
+      const matchesCategory =
+        selectedCategory === 'Todos' || product.category === selectedCategory;
+      const matchesSearch =
+        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        product.description.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
   }, [selectedCategory, searchQuery]);
 
+  /**
+   * Monta mensagem WhatsApp formatada com o pedido completo.
+   *
+   * Aprendizado: wa.me usa encoding de URL.
+   * - %0A = quebra de linha
+   * - *texto* = negrito no WhatsApp
+   * - _texto_ = itálico no WhatsApp
+   */
   const handleWhatsAppOrder = () => {
-    const phone = '5531999999999'; // Substituir pelo número real
-    const itemsList = items.map(item => `- ${item.quantity}x ${item.name} (R$ ${item.price.toFixed(2)})`).join('%0A');
-    const message = `Olá! Gostaria de fazer um pedido:%0A%0A${itemsList}%0A%0ATotal: R$ ${totalPrice().toFixed(2)}%0A%0AEndereço de Entrega: [Inserir Endereço]`;
-    window.open(`https://wa.me/${phone}?text=${message}`, '_blank');
+    const separator = '%0A' + '-'.repeat(22) + '%0A';
+
+    const itemsList = items
+      .map(
+        (item) =>
+          `✅ ${item.quantity}x *${item.name}*%0A` +
+          `   └ R$%20${(item.price * item.quantity).toFixed(2).replace('.', ',')}`
+      )
+      .join('%0A');
+
+    const message = encodeURIComponent(
+      [
+        '🍃 *NOVO PEDIDO — Mineiro Gourmet* 🍃',
+        '──────────────────────',
+        items
+          .map(
+            (item) =>
+              `✅ ${item.quantity}x *${item.name}*\n` +
+              `   └ R$ ${(item.price * item.quantity).toFixed(2).replace('.', ',')}`
+          )
+          .join('\n'),
+        '──────────────────────',
+        `📦 *Total: R$ ${totalPrice().toFixed(2).replace('.', ',')}*`,
+        '',
+        '📍 *Endereço de Entrega:* (informe aqui)',
+        '',
+        'Olá! Gostaria de confirmar este pedido. Pode verificar disponibilidade? 😊',
+      ].join('\n')
+    );
+
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${message}`, '_blank');
   };
 
   return (
     <div className="min-h-screen bg-mineiro-white">
       <Head>
         <title>Nosso Cardápio | Mineiro Gourmet</title>
+        <meta
+          name="description"
+          content="Cardápio completo do Mineiro Gourmet. Pratos mineiros tradicionais para entrega: frango com quiabo, feijão tropeiro, pão de queijo, doce de leite e muito mais."
+        />
       </Head>
 
       <Header />
 
       <main className="pt-24 pb-20">
         <div className="container mx-auto px-4 md:px-6">
-          {/* Header do Cardápio */}
+
+          {/* Cabeçalho do Cardápio */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 gap-6">
             <div>
-              <Link href="/" className="text-mineiro-green flex items-center gap-2 text-sm font-bold mb-4 hover:gap-3 transition-all">
+              <Link
+                href="/"
+                className="text-mineiro-green flex items-center gap-2 text-sm font-bold mb-4 hover:gap-3 transition-all"
+              >
                 <ArrowLeft size={16} /> VOLTAR PARA HOME
               </Link>
               <h1 className="text-4xl md:text-5xl font-bold font-serif text-mineiro-dark">
                 Nosso <span className="text-mineiro-gold">Cardápio</span>
               </h1>
+              <p className="text-mineiro-barro mt-2 text-sm">
+                {filteredProducts.length} prato{filteredProducts.length !== 1 ? 's' : ''} encontrado{filteredProducts.length !== 1 ? 's' : ''}
+              </p>
             </div>
 
             <div className="relative md:w-80">
               <input
+                id="busca-cardapio"
                 type="text"
-                placeholder="Buscar delícias..."
+                placeholder="Buscar delícias mineiras..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-full py-3 px-6 pl-12 focus:outline-none focus:ring-2 focus:ring-mineiro-gold/50 shadow-sm transition-all"
+                className="w-full bg-white border border-mineiro-pedra/30 rounded-full py-3 px-6 pl-12 focus:outline-none focus:ring-2 focus:ring-mineiro-gold/50 shadow-sm transition-all"
               />
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
             </div>
           </div>
 
-          {/* Categorias Sidebar/Top */}
+          {/* Filtros por categoria */}
           <div className="flex overflow-x-auto pb-4 mb-10 gap-3 no-scrollbar">
             {categories.map((cat) => (
               <button
                 key={cat}
+                id={`cat-${cat.toLowerCase().replace(/\s+/g, '-')}`}
                 onClick={() => setSelectedCategory(cat)}
                 className={`whitespace-nowrap px-6 py-2 rounded-full text-sm font-bold transition-all ${
                   selectedCategory === cat
-                    ? 'bg-mineiro-green text-white shadow-lg'
-                    : 'bg-white text-mineiro-dark border border-gray-100 hover:border-mineiro-gold shadow-sm'
+                    ? 'bg-mineiro-dark text-mineiro-gold shadow-lg'
+                    : 'bg-white text-mineiro-dark border border-mineiro-pedra/20 hover:border-mineiro-gold shadow-sm'
                 }`}
               >
+                {cat === 'Café Mineiro' ? '☕ ' : ''}
                 {cat}
               </button>
             ))}
           </div>
 
-          {/* Grid de Produtos */}
+          {/* Grade de Produtos */}
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredProducts.map((product) => (
@@ -100,16 +164,26 @@ export default function Cardapio() {
             </div>
           ) : (
             <div className="py-20 text-center">
-              <p className="text-xl text-gray-500">Nenhum prato encontrado para sua busca.</p>
+              <span className="text-6xl block mb-4">🍽️</span>
+              <p className="text-xl text-gray-500">
+                Nenhum prato encontrado para &ldquo;{searchQuery}&rdquo;
+              </p>
+              <button
+                onClick={() => { setSearchQuery(''); setSelectedCategory('Todos'); }}
+                className="mt-4 text-mineiro-green font-bold hover:underline"
+              >
+                Limpar filtros
+              </button>
             </div>
           )}
         </div>
       </main>
 
-      {/* Botão Flutuante do Carrinho */}
+      {/* ── Botão Flutuante do Carrinho ────────────────────────── */}
       <button
+        id="abrir-carrinho"
         onClick={() => setIsCartOpen(true)}
-        className="fixed bottom-6 left-6 z-[90] bg-mineiro-dark text-white rounded-full p-4 shadow-2xl flex items-center gap-3 hover:scale-105 transition-transform group"
+        className="fixed bottom-6 left-6 z-50 bg-mineiro-dark text-white rounded-full p-4 shadow-2xl flex items-center gap-3 hover:scale-105 transition-transform group"
       >
         <div className="relative">
           <ShoppingBag size={24} />
@@ -125,57 +199,86 @@ export default function Cardapio() {
         </div>
       </button>
 
-      {/* Cart Drawer */}
+      {/* ── Cart Drawer ─────────────────────────────────────────── */}
       {isCartOpen && (
         <>
-          <div 
-            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[100] animate-fade-in" 
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
             onClick={() => setIsCartOpen(false)}
           />
-          <div className="fixed top-0 right-0 h-full w-full md:w-[450px] bg-white z-[110] shadow-2xl flex flex-col animate-slide-left">
-            <div className="p-6 border-b flex items-center justify-between bg-mineiro-white">
+
+          {/* Drawer */}
+          <div
+            className="fixed top-0 right-0 h-full w-full md:w-[480px] bg-white z-50 shadow-2xl flex flex-col animate-slide-left"
+          >
+            {/* Header do drawer */}
+            <div className="p-6 border-b flex items-center justify-between bg-mineiro-dark">
               <div className="flex items-center gap-3">
-                <ShoppingBag className="text-mineiro-green" size={24} />
-                <h2 className="text-xl font-bold font-serif">Seu Pedido</h2>
+                <ShoppingBag className="text-mineiro-gold" size={24} />
+                <h2 className="text-xl font-bold font-serif text-white">Seu Pedido</h2>
               </div>
-              <button 
+              <button
                 onClick={() => setIsCartOpen(false)}
-                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                className="p-2 hover:bg-white/10 rounded-full transition-colors text-white"
+                aria-label="Fechar carrinho"
               >
                 <X size={24} />
               </button>
             </div>
 
-            <div className="flex-grow overflow-y-auto p-6 space-y-6">
+            {/* Itens */}
+            <div className="grow overflow-y-auto p-6 space-y-6 bg-mineiro-white">
               {items.length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-center gap-4 opacity-40">
-                  <ShoppingBag size={80} />
-                  <p className="text-xl font-medium">Seu carrinho está vazio</p>
+                  <ShoppingBag size={80} className="text-mineiro-pedra" />
+                  <p className="text-xl font-medium text-mineiro-dark">Seu carrinho está vazio</p>
+                  <p className="text-sm text-gray-400">Adicione pratos mineiros deliciosos!</p>
                 </div>
               ) : (
                 items.map((item) => (
-                  <div key={item.id} className="flex gap-4 group">
-                    <img src={item.image} className="w-20 h-20 rounded-xl object-cover shrink-0" />
-                    <div className="flex-grow">
+                  <div key={item.id} className="flex gap-4 bg-white rounded-xl p-3 shadow-sm border border-mineiro-pedra/10">
+                    <img
+                      src={item.image}
+                      alt={item.name}
+                      width={80}
+                      height={80}
+                      className="rounded-xl object-cover shrink-0 w-20 h-20"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src =
+                          'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80"><rect fill="%23F5EDD8" width="80" height="80"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="30">🍽️</text></svg>';
+                      }}
+                    />
+                    <div className="grow">
                       <div className="flex justify-between items-start mb-1">
-                        <h4 className="font-bold text-mineiro-dark leading-tight">{item.name}</h4>
-                        <button onClick={() => removeItem(item.id)} className="text-gray-300 hover:text-red-500 transition-colors">
+                        <h4 className="font-bold text-mineiro-dark leading-tight text-sm">{item.name}</h4>
+                        <button
+                          onClick={() => removeItem(item.id)}
+                          className="text-gray-300 hover:text-red-500 transition-colors ml-2"
+                          aria-label={`Remover ${item.name}`}
+                        >
                           <Trash2 size={16} />
                         </button>
                       </div>
-                      <p className="text-sm text-gray-400 mb-3">Unitário: R$ {item.price.toFixed(2)}</p>
+                      <p className="text-xs text-gray-400 mb-3">
+                        Unitário: R$ {item.price.toFixed(2)}
+                      </p>
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center bg-gray-100 rounded-lg p-1">
-                          <button 
+                        <div className="flex items-center bg-mineiro-cream rounded-lg p-1">
+                          <button
                             onClick={() => updateQuantity(item.id, -1)}
                             className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all"
+                            aria-label="Diminuir quantidade"
                           >
                             <Minus size={14} />
                           </button>
-                          <span className="w-8 text-center text-sm font-bold">{item.quantity}</span>
-                          <button 
+                          <span className="w-8 text-center text-sm font-bold">
+                            {item.quantity}
+                          </span>
+                          <button
                             onClick={() => updateQuantity(item.id, 1)}
                             className="w-8 h-8 flex items-center justify-center hover:bg-white rounded-md transition-all"
+                            aria-label="Aumentar quantidade"
                           >
                             <Plus size={14} />
                           </button>
@@ -190,8 +293,9 @@ export default function Cardapio() {
               )}
             </div>
 
+            {/* Footer do drawer com totais e botão WhatsApp */}
             {items.length > 0 && (
-              <div className="p-6 bg-mineiro-cream/20 border-t space-y-4">
+              <div className="p-6 bg-white border-t border-mineiro-pedra/10 space-y-4">
                 <div className="flex justify-between items-center text-gray-500 text-sm">
                   <span>Subtotal</span>
                   <span>R$ {totalPrice().toFixed(2)}</span>
@@ -200,16 +304,20 @@ export default function Cardapio() {
                   <span>Taxa de Entrega</span>
                   <span className="text-mineiro-green font-bold uppercase text-xs">Grátis</span>
                 </div>
-                <div className="flex justify-between items-center pt-2">
+                <div className="flex justify-between items-center pt-2 border-t border-gray-100">
                   <span className="text-xl font-bold font-serif text-mineiro-dark">Total</span>
-                  <span className="text-2xl font-bold text-mineiro-green">R$ {totalPrice().toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-mineiro-green">
+                    R$ {totalPrice().toFixed(2)}
+                  </span>
                 </div>
-                
+
+                {/* Botão WhatsApp */}
                 <button
+                  id="finalizar-whatsapp"
                   onClick={handleWhatsAppOrder}
-                  className="w-full bg-green-500 hover:bg-green-600 text-white font-bold py-5 rounded-2xl shadow-xl shadow-green-200 transition-all flex items-center justify-center gap-3 active:scale-[0.98]"
+                  className="w-full bg-[#25D366] hover:bg-[#1ebe5d] text-white font-bold py-5 rounded-2xl shadow-xl transition-all flex items-center justify-center gap-3 active:scale-[0.98] hover:scale-[1.01]"
                 >
-                  <MessageSquare size={20} />
+                  <MessageSquare size={22} />
                   FINALIZAR NO WHATSAPP
                 </button>
                 <p className="text-[10px] text-center text-gray-400 uppercase font-black tracking-widest">
@@ -221,19 +329,6 @@ export default function Cardapio() {
         </>
       )}
 
-      <style jsx>{`
-        @keyframes slide-left {
-          from { transform: translateX(100%); }
-          to { transform: translateX(0); }
-        }
-        @keyframes fade-in {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        .animate-slide-left { animation: slide-left 0.4s cubic-bezier(0, 0, 0.2, 1); }
-        .animate-fade-in { animation: fade-in 0.3s ease-out; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
-      `}</style>
     </div>
   );
 }

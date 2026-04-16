@@ -1,31 +1,38 @@
 @import "tailwindcss";
 
 :root {
-  --background: #FAFAF8; /* Branco natural */
-  --foreground: #2C3E50; /* Cinza escuro */
-  --primary-gold: #D4AF37;
-  --primary-green: #2D5016;
-  --secondary-terracotta: #A0522D;
-  --bg-cream: #F5F1E8;
+  /* ── Paleta Mineira Autêntica ────────────────────────── */
+  --cor-terra: #8B4513;        /* Terra vermelha de Minas */
+  --cor-pedra: #C4A882;        /* Pedra-sabão de Ouro Preto */
+  --cor-barro: #A0522D;        /* Barro cozido / cerâmica */
+  --cor-mata: #3A5F2A;         /* Verde da mata atlântica */
+  --cor-milho: #D4A017;        /* Amarelo do milho-verde */
+  --cor-mogno: #3D1F0D;        /* Mogno escuro, madeira mineira */
+  --cor-creme: #F5EDD8;        /* Papel de pão / manteiga */
+  --cor-fumo:  #EDE5D0;        /* Cor de fumaça do fogão a lenha */
+  --cor-ouro:  #C8960C;        /* Ouro de Minas */
+  --cor-cafe:  #6B3A2A;        /* Café coado mineiro */
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-mineiro-gold: var(--primary-gold);
-  --color-mineiro-green: var(--primary-green);
-  --color-mineiro-terracotta: var(--secondary-terracotta);
-  --color-mineiro-cream: var(--bg-cream);
-  --color-mineiro-dark: #2C3E50;
-  --color-mineiro-white: #FAFAF8;
+  --color-mineiro-gold:       var(--cor-milho);   /* #D4A017 */
+  --color-mineiro-green:      var(--cor-mata);    /* #3A5F2A */
+  --color-mineiro-terracotta: var(--cor-terra);   /* #8B4513 */
+  --color-mineiro-dark:       var(--cor-mogno);   /* #3D1F0D */
+  --color-mineiro-cream:      var(--cor-creme);   /* #F5EDD8 */
+  --color-mineiro-white:      var(--cor-fumo);    /* #EDE5D0 */
+  --color-mineiro-pedra:      var(--cor-pedra);   /* #C4A882 */
+  --color-mineiro-barro:      var(--cor-barro);   /* #A0522D */
+  --color-mineiro-ouro:       var(--cor-ouro);    /* #C8960C */
+  --color-mineiro-cafe:       var(--cor-cafe);    /* #6B3A2A */
 
   --font-sans: 'Inter', sans-serif;
   --font-serif: 'Playfair Display', serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--cor-fumo);
+  color: var(--cor-mogno);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
 }
@@ -34,18 +41,34 @@ h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-serif);
 }
 
-/* Custom Baroque Patterns and Utilities */
+/* ── Utilitários de padrão / textura ─────────────────── */
 .bg-mineiro-pattern {
-  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l5 10 10 5-10 5-5 10-5-10-10-5 10-5 5-10z' fill='%23D4AF37' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 0l5 10 10 5-10 5-5 10-5-10-10-5 10-5 5-10z' fill='%23D4A017' fill-opacity='0.06' fill-rule='evenodd'/%3E%3C/svg%3E");
 }
 
 .gold-gradient {
-  background: linear-gradient(135deg, #D4AF37 0%, #F5D17E 50%, #B8860B 100%);
+  background: linear-gradient(135deg, #D4A017 0%, #F0C642 50%, #B8860B 100%);
 }
 
 .text-gold-gradient {
-  background: linear-gradient(135deg, #D4AF37 0%, #F5D17E 50%, #B8860B 100%);
+  background: linear-gradient(135deg, #D4A017 0%, #F0C642 50%, #B8860B 100%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* ── Helper: ocultar scrollbar mas manter scroll ─────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Animações do Cart Drawer (evita styled-jsx + Turbopack) ─ */
+@keyframes slideLeft {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.animate-slide-left { animation: slideLeft 0.4s cubic-bezier(0, 0, 0.2, 1); }
+.animate-fade-in    { animation: fadeIn 0.3s ease-out; }
